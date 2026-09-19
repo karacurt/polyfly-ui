@@ -1,20 +1,6 @@
-"use client";
-
-import { formatSignedUsdc, formatUsdc, shortAddress, signClass } from "@/lib/format";
-import type { Copy, Locale } from "@/lib/i18n";
+import { formatPct, formatSignedUsdc, formatUsdc, shortAddress, signClass } from "@/lib/format";
+import { copy } from "@/lib/i18n";
 import type { Scoreboard as ScoreboardData } from "@/lib/types";
-
-function formatPct(value: number | undefined, locale: Locale): string {
-  if (!Number.isFinite(value)) return "—";
-  const n = value as number;
-  const body = Math.abs(n).toLocaleString(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  if (n > 0) return `+${body}%`;
-  if (n < 0) return `−${body}%`;
-  return `${body}%`;
-}
 
 function sideClass(side?: string): "buy" | "sell" | "" {
   if (side === "BUY") return "buy";
@@ -22,13 +8,7 @@ function sideClass(side?: string): "buy" | "sell" | "" {
   return "";
 }
 
-type ScoreboardProps = {
-  board: ScoreboardData;
-  copy: Copy;
-  locale: Locale;
-};
-
-export function Scoreboard({ board, copy, locale }: ScoreboardProps) {
+export function Scoreboard({ board }: { board: ScoreboardData }) {
   const fly = board.fly;
   const wallet = board.wallet;
   const delta = board.delta;
@@ -54,13 +34,13 @@ export function Scoreboard({ board, copy, locale }: ScoreboardProps) {
               {copy.paper}
             </span>
           </div>
-          <strong className="score-equity">{formatUsdc(fly.equity, locale)}</strong>
+          <strong className="score-equity">{formatUsdc(fly.equity)}</strong>
           <div className="score-meta">
             <span className={signClass(fly.pnl)}>
-              {formatSignedUsdc(fly.pnl, locale)} · {formatPct(fly.pnl_percent, locale)}
+              {formatSignedUsdc(fly.pnl)} · {formatPct(fly.pnl_percent)}
             </span>
             <span>
-              {copy.scoreStart} {formatUsdc(fly.start, locale)}
+              {copy.scoreStart} {formatUsdc(fly.start)}
             </span>
           </div>
           <div className="score-signal">
@@ -74,12 +54,10 @@ export function Scoreboard({ board, copy, locale }: ScoreboardProps) {
             <span className="eyebrow">{copy.scoreDelta}</span>
           </div>
           <strong className={`score-equity ${signClass(delta?.equity)}`}>
-            {delta ? formatSignedUsdc(delta.equity, locale) : "—"}
+            {delta ? formatSignedUsdc(delta.equity) : "—"}
           </strong>
           <div className="score-meta">
-            <span className={signClass(delta?.pnl_percent)}>
-              {formatPct(delta?.pnl_percent, locale)}
-            </span>
+            <span className={signClass(delta?.pnl_percent)}>{formatPct(delta?.pnl_percent)}</span>
             <span>{copy.scoreVsStart}</span>
           </div>
           <p className={`score-leader ${delta?.leader ?? "tie"}`}>{leader}</p>
@@ -94,22 +72,22 @@ export function Scoreboard({ board, copy, locale }: ScoreboardProps) {
             </span>
           </div>
           <strong className="score-equity">
-            {wallet ? formatUsdc(wallet.equity, locale) : "—"}
+            {wallet ? formatUsdc(wallet.equity) : "—"}
           </strong>
           <div className="score-meta">
             <span className={signClass(wallet?.pnl)}>
               {wallet
-                ? `${formatSignedUsdc(wallet.pnl, locale)} · ${formatPct(wallet.pnl_percent, locale)}`
+                ? `${formatSignedUsdc(wallet.pnl)} · ${formatPct(wallet.pnl_percent)}`
                 : "—"}
             </span>
             <span>
-              {copy.liveCash} {wallet ? formatUsdc(wallet.cash_pusd, locale) : "—"}
+              {copy.liveCash} {wallet ? formatUsdc(wallet.cash_pusd) : "—"}
             </span>
           </div>
           <div className="score-signal">
             <small>
               {copy.livePositions} {wallet?.positions ?? 0} · {copy.liveValue}{" "}
-              {wallet ? formatUsdc(wallet.position_value, locale) : "—"}
+              {wallet ? formatUsdc(wallet.position_value) : "—"}
             </small>
             <b>{wallet ? shortAddress(wallet.address) : "—"}</b>
           </div>

@@ -1,56 +1,58 @@
-# POLYFLY // NEURAL TRADING
+# Polyfly
 
-Frontend Next.js (App Router) para o **Polyfly** — um paper trader MaleCNS no Polymarket, no estilo cinematográfico do [Stonkfly](https://stonkfly-three.vercel.app/).
+Next.js (App Router) frontend for **Polyfly** — a MaleCNS paper trader watching Polymarket.
 
-**Esta UI não envia ordens.** Não há chaves privadas nem segredos CLOB no repositório.
+The homepage is an English-only bioluminescent observatory: a large decorative fruit fly over a live-feeling neuron field, then a scoreboard, the live wallet, paper-brain stats, the chart the fly sees, and how it works.
 
-Há dois lados no **placar** da homepage (não é “Grok Bot”):
+**This UI does not send orders.** There are no private keys and no CLOB secrets in the repository.
 
-- **Mosca** — paper MaleCNS: patrimônio da semente / `SNAPSHOT_URL`, P&L %, último sinal. Selo **PAPER**.
-- **Carteira Polymarket** — endereço público ao vivo: pUSD + valor do portfólio + posições. Selo **LIVE**.
-- **Delta** — mosca − carteira e P&L % desde o início, com “quem vai ganhando”.
+The homepage **scoreboard** is Fly vs Polymarket wallet (not “Grok Bot”):
 
-Aprendizado lucrativo **não foi demonstrado**. A mosca animada é **decorativa**.
+- **Fly** — paper MaleCNS: seed / `SNAPSHOT_URL` equity, P&L %, last signal. **Paper** badge.
+- **Polymarket wallet** — public live address: pUSD + portfolio value + positions. **Live** badge.
+- **Delta** — fly − wallet and P&L % since start, with who is ahead.
 
-## O que você vê
+Profitable learning **has not been demonstrated**. The animated fly is **decorative**.
 
-- Placar **Mosca (PAPER)** × **Carteira Polymarket (LIVE)**
-- Saldo pUSD, POL, USDC / USDC.e, valor do portfólio, posições e atividade
-- Avatar da mosca (SVG/CSS) que reage a BUY / SELL / HOLD do demo
-- O gráfico que a mosca “vê” (`/demo/latest-input.png`)
-- Bid/ask, spikes / ΔHz, decisões neurais paper
-- Seção *Como funciona*: pixels → rede → ação → retorno de P&L
+## What you see
 
-A cópia padrão é **português (pt-BR)**, com alternância EN no topo.
+1. Hero: large decorative fly over a canvas neuron field driven by snapshot neural fields (`total_spikes`, `left_hz` / `right_hz`, `difference_hz`, side, stimulus, memory `changed_edges` / `mean_efficacy`)
+2. Scoreboard **Fly (paper)** vs **Polymarket wallet (live)**
+3. Live wallet strip: pUSD, POL, USDC / USDC.e, portfolio, positions
+4. Paper fly-brain stats: equity, bid/ask, spikes / ΔHz, memory
+5. The chart the fly “sees” (`/demo/latest-input.png`) and paper decisions
+6. How it works: pixels → network → action → P&L feedback, plus paper-only disclaimers
 
-## Rodar localmente
+The entire UI is **English**. There is no language toggle.
+
+## Run locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abra [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000).
 
 ```bash
 npm run build
 npm start
 ```
 
-`GET /api/snapshot` devolve o snapshot combinado (cérebro demo + `chart_url` + eventos + `wallet`). O dashboard consulta essa rota a cada 1–2s.
+`GET /api/snapshot` returns the combined snapshot (demo brain + `chart_url` + events + `wallet`). The dashboard polls that route every 1–2s.
 
-## Carteira LIVE (só display)
+## Live wallet (display only)
 
-Por padrão o backend lê a carteira pública:
+By default the backend reads the public wallet:
 
 `0x6eA65CEf2FF7c8dfB3Ad59C6FACD32eA45f7744d` (Polygon)
 
-Fontes públicas, sem autenticação:
+Public sources, no authentication:
 
-- RPC Polygon (`POLYGON_RPC_URL` ou `https://polygon-bor.publicnode.com`): POL, pUSD `0xC011…2DFB` (6 dec), USDC nativo e USDC.e
-- [Data API](https://data-api.polymarket.com) com `User-Agent`: `/value`, `/positions`, `/activity?limit=20`
+- Polygon RPC (`POLYGON_RPC_URL` or `https://polygon-bor.publicnode.com`): POL, pUSD `0xC011…2DFB` (6 dec), native USDC and USDC.e
+- [Data API](https://data-api.polymarket.com) with `User-Agent`: `/value`, `/positions`, `/activity?limit=20`
 
-Na Vercel (Environment Variables):
+On Vercel (Environment Variables):
 
 ```bash
 WALLET_ADDRESS=0x6eA65CEf2FF7c8dfB3Ad59C6FACD32eA45f7744d
@@ -58,34 +60,34 @@ LIVE_WALLET=1
 WALLET_START_USD=10
 ```
 
-`WALLET_START_USD` é a base do P&L % da carteira (default `10`). A mosca usa `PAPER_START_USD` ou o caixa inicial da semente (`5`). Desligue o live com `LIVE_WALLET=0`. **Não** coloque private keys nem API secrets do CLOB.
+`WALLET_START_USD` is the wallet’s P&L % baseline (default `10`). The fly uses `PAPER_START_USD` or the seed’s initial cash (`5`). Turn live off with `LIVE_WALLET=0`. **Do not** put private keys or CLOB API secrets here.
 
-## Dados de demonstração (cérebro)
+## Demo brain data
 
-Os arquivos em `public/demo/` alimentam o painel neural:
+Files in `public/demo/` feed the neural panel:
 
-| Arquivo | Origem |
+| File | Source |
 | --- | --- |
-| `latest.json` | último tick paper |
-| `events.jsonl` | histórico de observações |
-| `latest-input.png` | quadro sensorial (gráfico) |
+| `latest.json` | latest paper tick |
+| `events.jsonl` | observation history |
+| `latest-input.png` | sensory frame (chart) |
 
-Por padrão o endpoint **reproduz** `events.jsonl` em ciclo (~1,5s). Desligue com `DEMO_REPLAY=0`.
+By default the endpoint **replays** `events.jsonl` in a cycle (~1.5s). Disable with `DEMO_REPLAY=0`.
 
-## Ligar um worker Polyfly de verdade
+## Wire a real Polyfly worker
 
-O worker (se existir) continua sendo a fonte do cérebro — não da carteira live.
+The worker (if it exists) remains the source of the brain — not the live wallet.
 
-1. Publique um JSON no formato de `public/demo/latest.json` (ou payload com `events` e `chart_url`).
-2. Defina `SNAPSHOT_URL=https://seu-worker.exemplo/snapshot`
-3. Redeploy. A faixa LIVE da carteira segue independente, via RPC + Data API.
+1. Publish JSON in the shape of `public/demo/latest.json` (or a payload that already includes `events` and `chart_url`).
+2. Set `SNAPSHOT_URL=https://your-worker.example/snapshot`
+3. Redeploy. The live wallet strip stays independent, via RPC + Data API.
 
-## Deploy na Vercel
+## Deploy on Vercel
 
-Importe este repositório (branch `main`). Framework preset: **Next.js**. Build: `npm run build`.
+Import this repository (`main`). Framework preset: **Next.js**. Build: `npm run build`.
 
-Variáveis recomendadas: `WALLET_ADDRESS`, `LIVE_WALLET=1`, `WALLET_START_USD=10`. Nenhuma é obrigatória — o endereço documentado e o start `10` são o default.
+Recommended variables: `WALLET_ADDRESS`, `LIVE_WALLET=1`, `WALLET_START_USD=10`. None are required — the documented address and start `10` are the defaults.
 
-## Aviso
+## Disclaimer
 
-Polyfly é um experimento. Conexões que mudam no modelo **não** provam habilidade de trading. Ordens reais não partem desta página. LIVE significa “ler carteira pública”, não “operar ao vivo”.
+Polyfly is an experiment. Connections that change in the model **do not** prove trading skill. Real orders do not leave this page. Live means “read a public wallet,” not “trade live.”
