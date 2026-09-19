@@ -466,8 +466,8 @@ main.watch {
 }
 
 .value {
-  font: 700 clamp(40px, 4vw, 60px) / 1.2 var(--pixel);
-  letter-spacing: -3px;
+  font: 400 clamp(40px, 4vw, 60px) / 1.2 var(--pixel);
+  letter-spacing: 0;
   margin: 4px 0 8px;
   white-space: nowrap;
 }
@@ -475,7 +475,7 @@ main.watch {
 .value .cents {
   color: #676b7c;
   font-size: 0.7em;
-  letter-spacing: -2px;
+  letter-spacing: 0;
 }
 
 .pnl-row {

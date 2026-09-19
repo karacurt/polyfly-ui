@@ -51,7 +51,7 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
 
   const t = copy[locale];
   const side = (snapshot.neural?.side ?? "HOLD") as NeuralSide;
-  const equity = splitEquity(snapshot.equity_usdc);
+  const equity = splitEquity(snapshot.equity_usdc, locale);
 
   const syncHash = useCallback(() => {
     setHow(window.location.hash === "#how-it-works");

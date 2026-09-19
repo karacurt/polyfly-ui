@@ -76,14 +76,20 @@ export function formatClock(epoch: number | undefined, locale: Locale): string {
   });
 }
 
-export function splitEquity(value: string | number | undefined): {
+export function splitEquity(
+  value: string | number | undefined,
+  locale: Locale = "pt-BR",
+): {
   whole: string;
   cents: string;
 } {
   const n = Number(value);
   if (!Number.isFinite(n)) return { whole: "—", cents: "" };
   const [whole, cents = "00"] = n.toFixed(2).split(".");
-  return { whole: Number(whole).toLocaleString("pt-BR"), cents: `.${cents}` };
+  return {
+    whole: Number(whole).toLocaleString(locale, { maximumFractionDigits: 0 }),
+    cents: `.${cents}`,
+  };
 }
 
 export function signClass(value: string | number | undefined): string {
