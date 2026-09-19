@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ConsciousnessPanel } from "@/components/ConsciousnessPanel";
 import { FlyAvatar } from "@/components/FlyAvatar";
 import { Header } from "@/components/Header";
 import { HowItWorks } from "@/components/HowItWorks";
@@ -14,6 +15,7 @@ import {
   formatSignedUsdc,
   formatPol,
   formatUsdc,
+  formatWeth,
   relativeAge,
   shortAddress,
   signClass,
@@ -107,8 +109,12 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
       <Header live={Boolean(wallet)} />
 
       <main id="watch" tabIndex={-1} aria-label="Polyfly dashboard">
-        <section className="hero" aria-label="Decorative fly over a live neuron field">
-          <NeuronField neural={snapshot.neural} motion={motion} />
+        <section className="hero" aria-label="Decorative fly over a living FlyWire-style connectome">
+          <NeuronField
+            neural={snapshot.neural}
+            consciousness={snapshot.consciousness}
+            motion={motion}
+          />
           <div className="hero-controls">
             <span>
               <b className={`live-dot ${connected ? "on" : ""}`} />
@@ -126,7 +132,13 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
             <FlyAvatar
               side={side}
               motion={motion}
-              intensity={Math.min(1, Math.abs(snapshot.neural?.difference_hz ?? 0) / 12)}
+              intensity={Math.min(
+                1,
+                Math.max(
+                  snapshot.consciousness?.ci ?? 0.2,
+                  Math.abs(snapshot.neural?.difference_hz ?? 0) / 12,
+                ),
+              )}
             />
           </div>
           <div className="hero-copy">
@@ -147,6 +159,8 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
             <small>{stimulusCopy(snapshot.neural?.stimulus)}</small>
           </aside>
         </section>
+
+        <ConsciousnessPanel mind={snapshot.consciousness} />
 
         {snapshot.scoreboard ? <Scoreboard board={snapshot.scoreboard} /> : null}
 
@@ -199,11 +213,21 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
                     <strong>{formatPol(wallet.balances.pol)}</strong>
                   </div>
                   <div className="stat-card">
+                    <span>{copy.liveUsdce}</span>
+                    <strong>{formatUsdc(wallet.balances.usdce)}</strong>
+                  </div>
+                  <div className="stat-card">
+                    <span>{copy.liveWeth}</span>
+                    <strong>{formatWeth(wallet.balances.weth)}</strong>
+                  </div>
+                  <div className="stat-card">
                     <span>
-                      {copy.liveUsdc} / {copy.liveUsdce}
+                      {copy.livePrice} · {copy.liveVenue}
                     </span>
                     <strong>
-                      {formatUsdc(wallet.balances.usdc)} / {formatUsdc(wallet.balances.usdce)}
+                      {wallet.weth_price_usdce
+                        ? `${formatUsdc(wallet.weth_price_usdce)} USDC.e`
+                        : "—"}
                     </strong>
                   </div>
                   <div className="stat-card wide">
@@ -229,7 +253,7 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
                     {wallet.positions.map((pos) => (
                       <div className="holding" key={`${pos.slug ?? pos.title}-${pos.outcome}`}>
                         <div className="coin">
-                          <div className="coin-icon">P</div>
+                          <div className="coin-icon">Ξ</div>
                           <div>
                             <strong>{pos.outcome || pos.title}</strong>
                             <small>{pos.title}</small>
@@ -238,8 +262,8 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
                         <div className="holding-value">
                           <strong>{formatUsdc(pos.current_value)}</strong>
                           <small className={signClass(pos.cash_pnl)}>
-                            {formatSignedUsdc(pos.cash_pnl)} · {pos.size.toFixed(2)} @{" "}
-                            {pos.cur_price.toFixed(2)}
+                            {formatSignedUsdc(pos.cash_pnl)} · {formatWeth(pos.size)} @{" "}
+                            {formatUsdc(pos.cur_price)}
                           </small>
                         </div>
                       </div>

@@ -37,6 +37,18 @@ export type NeuralState = {
   memory?: MemoryState;
 };
 
+export type ConsciousnessSource = "live" | "adapted" | "demo";
+
+export type ConsciousnessState = {
+  ci: number;
+  phi: number;
+  broadcast: number;
+  self: number;
+  complexity: number;
+  timeline?: number[];
+  source: ConsciousnessSource;
+};
+
 export type ExecutionState = {
   status: string;
   mode?: string;
@@ -58,6 +70,7 @@ export type RawSnapshot = {
   pnl_delta_usdc: string;
   neural: NeuralState;
   execution: ExecutionState;
+  consciousness?: ConsciousnessState;
 };
 
 export type SnapshotEvent = RawSnapshot;
@@ -67,6 +80,7 @@ export type WalletBalances = {
   pusd: string;
   usdc: string;
   usdce: string;
+  weth: string;
   cash_usdc: string;
 };
 
@@ -80,6 +94,7 @@ export type WalletPosition = {
   percent_pnl: number;
   cur_price: number;
   slug?: string;
+  venue?: string;
 };
 
 export type WalletActivity = {
@@ -97,22 +112,25 @@ export type LiveWallet = {
   enabled: boolean;
   address: string;
   chain: "polygon";
+  venue: "paraswap";
+  pair: "WETH/USDC.e";
   balances: WalletBalances;
   portfolio_value: string;
   position_value: string;
   cash_pnl: number;
+  weth_price_usdce?: string;
   positions: WalletPosition[];
   activity: WalletActivity[];
   fetched_at: string;
   sources: {
     rpc: boolean;
-    data_api: boolean;
+    price: boolean;
   };
   error?: string;
 };
 
 export type ScoreboardSide = {
-  label: "mosca" | "polymarket_wallet";
+  label: "fly" | "dex_wallet";
   mode: "paper" | "live";
   equity: string;
   start: string;
@@ -144,4 +162,5 @@ export type SnapshotPayload = RawSnapshot & {
   paper_equity_usdc?: string;
   wallet?: LiveWallet;
   scoreboard?: Scoreboard;
+  consciousness?: ConsciousnessState;
 };

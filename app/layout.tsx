@@ -22,15 +22,15 @@ export const metadata: Metadata = {
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : "http://localhost:3000",
   ),
-  title: "Polyfly — a connectome on Polymarket",
+  title: "Polyfly — a living connectome on Polygon",
   description:
-    "A MaleCNS paper trader watching Polymarket. Decorative fly, live-feeling neurons, display-only wallet. No real orders.",
+    "A MaleCNS paper trader with FlyWire-style neurons and Consciousness proxies. Display-only Polygon DEX wallet. No real orders.",
   applicationName: "Polyfly",
   robots: { index: true, follow: true },
   openGraph: {
-    title: "Polyfly — a connectome on Polymarket",
+    title: "Polyfly — a living connectome on Polygon",
     description:
-      "A MaleCNS paper trader watching Polymarket. Decorative fly, live-feeling neurons, display-only wallet. No real orders.",
+      "A MaleCNS paper trader with FlyWire-style neurons and Consciousness proxies. Display-only Polygon DEX wallet. No real orders.",
     type: "website",
     locale: "en_US",
   },

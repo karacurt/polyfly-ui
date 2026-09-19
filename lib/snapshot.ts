@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { resolveConsciousness } from "@/lib/consciousness";
 import { buildScoreboard } from "@/lib/scoreboard";
 import type { RawSnapshot, SnapshotEvent, SnapshotPayload } from "@/lib/types";
 import { fetchLiveWallet } from "@/lib/wallet";
@@ -58,13 +59,15 @@ async function withMeta(
   source: SnapshotPayload["source"],
   chartUrl: string,
   replay: boolean,
+  extra?: unknown,
 ): Promise<SnapshotPayload> {
   const wallet = await fetchLiveWallet();
   const paperEquity = snap.equity_usdc;
   const liveOk =
     Boolean(wallet?.enabled) &&
-    Boolean(wallet?.sources.rpc || wallet?.sources.data_api);
+    Boolean(wallet?.sources.rpc || wallet?.sources.price);
   const liveEquity = liveOk && wallet ? wallet.portfolio_value : paperEquity;
+  const consciousness = resolveConsciousness(snap, extra, source);
 
   const scoreboard = buildScoreboard(
     { ...snap, equity_usdc: paperEquity },
@@ -84,6 +87,7 @@ async function withMeta(
     replay,
     wallet,
     scoreboard,
+    consciousness,
   };
 }
 
@@ -126,7 +130,8 @@ export async function getSnapshot(): Promise<SnapshotPayload> {
         headers: { accept: "application/json" },
       });
       if (response.ok) {
-        const extracted = extractRemote(await response.json(), events);
+        const remoteJson = await response.json();
+        const extracted = extractRemote(remoteJson, events);
         if (extracted) {
           return await withMeta(
             extracted.snap,
@@ -134,6 +139,7 @@ export async function getSnapshot(): Promise<SnapshotPayload> {
             "remote",
             extracted.chartUrl,
             false,
+            remoteJson,
           );
         }
       }

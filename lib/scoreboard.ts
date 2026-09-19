@@ -69,7 +69,7 @@ export function buildScoreboard(
   const signal = (snap.neural?.side ?? "HOLD") as NeuralSide;
 
   const fly = {
-    label: "mosca" as const,
+    label: "fly" as const,
     mode: "paper" as const,
     equity: money(flyEquity),
     start: money(flyStart),
@@ -97,7 +97,7 @@ export function buildScoreboard(
   return {
     fly,
     wallet: {
-      label: "polymarket_wallet",
+      label: "dex_wallet",
       mode: "live",
       equity: money(walletEquity),
       cash_pusd: wallet.balances.pusd,

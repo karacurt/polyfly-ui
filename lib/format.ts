@@ -83,6 +83,15 @@ export function signClass(value: string | number | undefined): string {
   return n > 0 ? "positive" : "negative";
 }
 
+export function formatWeth(value: string | number | undefined): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  return n.toLocaleString("en-US", {
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 6,
+  });
+}
+
 export function formatPol(value: string | number | undefined): string {
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
