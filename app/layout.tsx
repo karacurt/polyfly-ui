@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono } from "next/font/google";
+import { IBM_Plex_Mono, Silkscreen } from "next/font/google";
 import "./globals.css";
 
 const ibm = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--font-ibm",
+  display: "swap",
+});
+
+const pixel = Silkscreen({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-pixel",
   display: "swap",
 });
 
@@ -33,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={ibm.variable}>
+    <html lang="pt-BR" className={`${ibm.variable} ${pixel.variable}`}>
       <body>{children}</body>
     </html>
   );
