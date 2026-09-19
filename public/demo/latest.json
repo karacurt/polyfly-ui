@@ -1,0 +1,44 @@
+{
+  "tick": 4,
+  "wall_time": 1789848359.8979554,
+  "product": "will-spd-win-the-most-seats-in-the-2026-mecklenb",
+  "mode": "paper",
+  "quote": {
+    "product": "will-spd-win-the-most-seats-in-the-2026-mecklenb",
+    "bid": "0.52",
+    "ask": "0.53",
+    "timestamp": 1789848354.4370823,
+    "base_increment": "0.01",
+    "quote_increment": "0.01",
+    "price_increment": "0.01",
+    "minimum_quote": "0.05",
+    "minimum_base": "5",
+    "mid": "0.525",
+    "title": "Will SPD win the most seats in the 2026 Mecklenburg-Vorpommern parliamentary ele",
+    "outcome": "Yes",
+    "token_id": "25008791305942260763315945325578111861295232893525817968684747264190717299294",
+    "slug": "will-spd-win-the-most-seats-in-the-2026-mecklenburg-vorpommern-parliamentary-elections"
+  },
+  "equity_usdc": "4.8825662",
+  "pnl_delta_usdc": "0E-7",
+  "neural": {
+    "side": "HOLD",
+    "left_hz": 42.0,
+    "right_hz": 42.0,
+    "difference_hz": 0.0,
+    "gate_spikes": 0,
+    "stimulus": "none",
+    "total_spikes": 608348,
+    "memory": {
+      "plastic_edges": 7835,
+      "changed_edges": 3048,
+      "mean_efficacy": 1.0197193622589111,
+      "minimum_efficacy": 0.580707311630249,
+      "sha256": "432c3905cf925067b51269a9e670228c3a317566784f1b5e4d085930c743ba55",
+      "model": "stonkfly-dual-compartment-v1"
+    }
+  },
+  "execution": {
+    "status": "HOLD"
+  }
+}
