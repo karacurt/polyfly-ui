@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { RawSnapshot, SnapshotEvent, SnapshotPayload } from "@/lib/types";
+import { fetchLiveWallet } from "@/lib/wallet";
 
 const DEMO_CHART = "/demo/latest-input.png";
 const REPLAY_MS = 1500;
@@ -50,21 +51,31 @@ function pickReplay(events: SnapshotEvent[], latest: RawSnapshot): RawSnapshot {
   return events[index] ?? latest;
 }
 
-function withMeta(
+async function withMeta(
   snap: RawSnapshot,
   events: SnapshotEvent[],
   source: SnapshotPayload["source"],
   chartUrl: string,
   replay: boolean,
-): SnapshotPayload {
+): Promise<SnapshotPayload> {
+  const wallet = await fetchLiveWallet();
+  const paperEquity = snap.equity_usdc;
+  const liveOk =
+    Boolean(wallet?.enabled) &&
+    Boolean(wallet?.sources.rpc || wallet?.sources.data_api);
+  const liveEquity = liveOk && wallet ? wallet.portfolio_value : paperEquity;
+
   return {
     ...snap,
     mode: snap.mode || "paper",
+    equity_usdc: liveEquity,
+    paper_equity_usdc: paperEquity,
     chart_url: chartUrl,
     events,
     source,
     fetched_at: new Date().toISOString(),
     replay,
+    wallet,
   };
 }
 
@@ -109,7 +120,7 @@ export async function getSnapshot(): Promise<SnapshotPayload> {
       if (response.ok) {
         const extracted = extractRemote(await response.json(), events);
         if (extracted) {
-          return withMeta(
+          return await withMeta(
             extracted.snap,
             extracted.events,
             "remote",
@@ -125,7 +136,7 @@ export async function getSnapshot(): Promise<SnapshotPayload> {
 
   const current = pickReplay(events, latest);
   const visibleEvents = events.filter((event) => event.tick <= current.tick);
-  return withMeta(
+  return await withMeta(
     current,
     visibleEvents.length ? visibleEvents : [current],
     "demo",

@@ -62,10 +62,61 @@ export type RawSnapshot = {
 
 export type SnapshotEvent = RawSnapshot;
 
+export type WalletBalances = {
+  pol: string;
+  pusd: string;
+  usdc: string;
+  usdce: string;
+  cash_usdc: string;
+};
+
+export type WalletPosition = {
+  title: string;
+  outcome: string;
+  size: number;
+  avg_price: number;
+  current_value: number;
+  cash_pnl: number;
+  percent_pnl: number;
+  cur_price: number;
+  slug?: string;
+};
+
+export type WalletActivity = {
+  timestamp: number;
+  type: string;
+  side?: string;
+  title?: string;
+  outcome?: string;
+  size?: number;
+  price?: number;
+  usdc_size?: number;
+};
+
+export type LiveWallet = {
+  enabled: boolean;
+  address: string;
+  chain: "polygon";
+  balances: WalletBalances;
+  portfolio_value: string;
+  position_value: string;
+  cash_pnl: number;
+  positions: WalletPosition[];
+  activity: WalletActivity[];
+  fetched_at: string;
+  sources: {
+    rpc: boolean;
+    data_api: boolean;
+  };
+  error?: string;
+};
+
 export type SnapshotPayload = RawSnapshot & {
   chart_url: string;
   events: SnapshotEvent[];
   source: "demo" | "remote";
   fetched_at: string;
   replay?: boolean;
+  paper_equity_usdc?: string;
+  wallet?: LiveWallet;
 };
