@@ -41,7 +41,9 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
   const [connected, setConnected] = useState(true);
   const [motion, setMotion] = useState(true);
   const [now, setNow] = useState(() => Date.now());
-  const [tab, setTab] = useState<"wallet" | "events">("wallet");
+  const [tab, setTab] = useState<"wallet" | "events">(() =>
+    initial.wallet?.activity?.length ? "wallet" : "events",
+  );
 
   const side = (snapshot.neural?.side ?? "HOLD") as NeuralSide;
   const wallet = snapshot.wallet?.enabled ? snapshot.wallet : undefined;
