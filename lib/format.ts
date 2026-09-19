@@ -1,37 +1,34 @@
-import type { Locale } from "@/lib/i18n";
+const LOCALE = "en-US";
 
-export function formatUsdc(value: string | number | undefined, locale: Locale): string {
+export function formatUsdc(value: string | number | undefined): string {
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString(locale, {
+  return n.toLocaleString(LOCALE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 4,
   });
 }
 
-export function formatSignedUsdc(
-  value: string | number | undefined,
-  locale: Locale,
-): string {
+export function formatSignedUsdc(value: string | number | undefined): string {
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
-  const abs = formatUsdc(Math.abs(n), locale);
+  const abs = formatUsdc(Math.abs(n));
   if (n > 0) return `+${abs}`;
   if (n < 0) return `−${abs}`;
   return abs;
 }
 
-export function formatHz(value: number | undefined, locale: Locale): string {
+export function formatHz(value: number | undefined): string {
   if (!Number.isFinite(value)) return "—";
-  return Number(value).toLocaleString(locale, {
+  return Number(value).toLocaleString(LOCALE, {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   });
 }
 
-export function formatInt(value: number | undefined, locale: Locale): string {
+export function formatInt(value: number | undefined): string {
   if (!Number.isFinite(value)) return "—";
-  return Number(value).toLocaleString(locale);
+  return Number(value).toLocaleString(LOCALE);
 }
 
 export function formatPrice(value: string | number | undefined): string {
@@ -40,10 +37,7 @@ export function formatPrice(value: string | number | undefined): string {
   return n.toFixed(2);
 }
 
-export function relativeAge(
-  isoOrEpoch: string | number | undefined,
-  locale: Locale,
-): string {
+export function relativeAge(isoOrEpoch: string | number | undefined): string {
   if (isoOrEpoch == null) return "—";
   const ms =
     typeof isoOrEpoch === "number"
@@ -53,22 +47,16 @@ export function relativeAge(
       : Date.parse(isoOrEpoch);
   if (!Number.isFinite(ms)) return "—";
   const seconds = Math.max(0, Math.floor((Date.now() - ms) / 1000));
-  if (locale === "pt-BR") {
-    if (seconds < 60) return `há ${seconds}s`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `há ${minutes} min`;
-    return `há ${Math.floor(minutes / 60)} h`;
-  }
   if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
   return `${Math.floor(minutes / 60)}h ago`;
 }
 
-export function formatClock(epoch: number | undefined, locale: Locale): string {
+export function formatClock(epoch: number | undefined): string {
   if (!Number.isFinite(epoch)) return "—";
   const ms = (epoch as number) > 1e12 ? (epoch as number) : (epoch as number) * 1000;
-  return new Date(ms).toLocaleTimeString(locale, {
+  return new Date(ms).toLocaleTimeString(LOCALE, {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
@@ -76,10 +64,7 @@ export function formatClock(epoch: number | undefined, locale: Locale): string {
   });
 }
 
-export function splitEquity(
-  value: string | number | undefined,
-  locale: Locale = "pt-BR",
-): {
+export function splitEquity(value: string | number | undefined): {
   whole: string;
   cents: string;
 } {
@@ -87,7 +72,7 @@ export function splitEquity(
   if (!Number.isFinite(n)) return { whole: "—", cents: "" };
   const [whole, cents = "00"] = n.toFixed(2).split(".");
   return {
-    whole: Number(whole).toLocaleString(locale, { maximumFractionDigits: 0 }),
+    whole: Number(whole).toLocaleString(LOCALE, { maximumFractionDigits: 0 }),
     cents: `.${cents}`,
   };
 }
@@ -98,13 +83,25 @@ export function signClass(value: string | number | undefined): string {
   return n > 0 ? "positive" : "negative";
 }
 
-export function formatPol(value: string | number | undefined, locale: Locale): string {
+export function formatPol(value: string | number | undefined): string {
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString(locale, {
+  return n.toLocaleString(LOCALE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 4,
   });
+}
+
+export function formatPct(value: number | undefined): string {
+  if (!Number.isFinite(value)) return "—";
+  const n = value as number;
+  const body = Math.abs(n).toLocaleString(LOCALE, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  if (n > 0) return `+${body}%`;
+  if (n < 0) return `−${body}%`;
+  return `${body}%`;
 }
 
 export function shortAddress(address: string | undefined): string {

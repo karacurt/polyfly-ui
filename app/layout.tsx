@@ -1,36 +1,38 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Silkscreen } from "next/font/google";
+import { Instrument_Serif, Outfit } from "next/font/google";
 import "./globals.css";
 
-const ibm = IBM_Plex_Mono({
+const serif = Instrument_Serif({
   subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-ibm",
+  weight: "400",
+  variable: "--font-serif",
   display: "swap",
 });
 
-const pixel = Silkscreen({
+const sans = Outfit({
   subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-pixel",
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-sans",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : "http://localhost:3000"),
-  title: "POLYFLY // NEURAL TRADING",
+  metadataBase: new URL(
+    process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : "http://localhost:3000",
+  ),
+  title: "Polyfly — a connectome on Polymarket",
   description:
-    "Paper trader MaleCNS no Polymarket. Experimento visual — sem ordens reais.",
+    "A MaleCNS paper trader watching Polymarket. Decorative fly, live-feeling neurons, display-only wallet. No real orders.",
   applicationName: "Polyfly",
   robots: { index: true, follow: true },
   openGraph: {
-    title: "POLYFLY // NEURAL TRADING",
+    title: "Polyfly — a connectome on Polymarket",
     description:
-      "Paper trader MaleCNS no Polymarket. Experimento visual — sem ordens reais.",
+      "A MaleCNS paper trader watching Polymarket. Decorative fly, live-feeling neurons, display-only wallet. No real orders.",
     type: "website",
-    locale: "pt_BR",
+    locale: "en_US",
   },
 };
 
@@ -40,7 +42,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${ibm.variable} ${pixel.variable}`}>
+    <html lang="en" className={`${serif.variable} ${sans.variable}`}>
       <body>{children}</body>
     </html>
   );

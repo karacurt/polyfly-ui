@@ -1,29 +1,19 @@
-"use client";
-
-import type { Copy, Locale } from "@/lib/i18n";
+import { copy } from "@/lib/i18n";
 
 type HeaderProps = {
-  copy: Copy;
-  locale: Locale;
-  onLocale: (locale: Locale) => void;
-  how: boolean;
   live: boolean;
 };
 
-export function Header({ copy, locale, onLocale, how, live }: HeaderProps) {
+export function Header({ live }: HeaderProps) {
   return (
     <header className="top">
       <a className="wordmark" href="#watch" aria-label="Polyfly">
-        <svg
-          className="wordmark-fly"
-          viewBox="0 0 44 36"
-          aria-hidden="true"
-          shapeRendering="crispEdges"
-        >
-          <path fill="#f3f4ed" d="M8 4h3v2H8zM11 4h3v2h-3zM14 6h3v2h-3zM6 6h3v2H6zM4 10h3v2H4zM17 10h3v2h-3z" />
-          <path fill="#bdff32" d="M14 12h8v8h-8zM10 14h4v6h-4z" />
-          <path fill="#ff4b78" d="M22 14h6v6h-6z" />
-          <path fill="#f3f4ed" d="M12 22h4v3h-4zM20 22h4v3h-4zM8 26h3v3H8zM25 26h3v3h-3z" />
+        <svg className="wordmark-fly" viewBox="0 0 44 36" aria-hidden="true">
+          <ellipse cx="14" cy="12" rx="11" ry="5" fill="#d7e6f3" opacity="0.35" transform="rotate(-24 14 12)" />
+          <ellipse cx="30" cy="12" rx="11" ry="5" fill="#d7e6f3" opacity="0.35" transform="rotate(24 30 12)" />
+          <ellipse cx="22" cy="18" rx="6" ry="7" fill="#e8eef8" />
+          <circle cx="18" cy="14" r="3.2" fill="#6ee7f5" />
+          <circle cx="26" cy="14" r="3.2" fill="#6ee7f5" />
         </svg>
         <span className="wordmark-text">
           <strong>{copy.brand}</strong>
@@ -43,30 +33,10 @@ export function Header({ copy, locale, onLocale, how, live }: HeaderProps) {
             {copy.paper}
           </span>
         </div>
-        <div className="lang-toggle" role="group" aria-label="Idioma">
-          <button
-            type="button"
-            aria-pressed={locale === "pt-BR"}
-            onClick={() => onLocale("pt-BR")}
-          >
-            {copy.langPt}
-          </button>
-          <button
-            type="button"
-            aria-pressed={locale === "en"}
-            onClick={() => onLocale("en")}
-          >
-            {copy.langEn}
-          </button>
-        </div>
-        <a
-          className="how-link"
-          href={how ? "#watch" : "#how-it-works"}
-          aria-current={how ? "page" : undefined}
-        >
+        <a className="how-link" href="#how-it-works">
           <svg viewBox="0 0 20 20" aria-hidden="true">
             <path
-              d="M3 2h11v2h3v14H3V2Zm2 2v12h10V6h-3V4H5Zm2 4h6v2H7V8Zm0 4h6v2H7v-2Z"
+              d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm.75 12h-1.5v-1.5h1.5V14Zm0-3h-1.5V6h1.5v5Z"
               fill="currentColor"
             />
           </svg>
