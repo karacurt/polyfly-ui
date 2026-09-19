@@ -4,16 +4,17 @@ Frontend Next.js (App Router) para o **Polyfly** — um paper trader MaleCNS no 
 
 **Esta UI não envia ordens.** Não há chaves privadas nem segredos CLOB no repositório.
 
-Há dois modos na mesma página:
+Há dois lados no **placar** da homepage (não é “Grok Bot”):
 
-- **LIVE** — faixa da carteira: saldo e posições de um endereço Polygon público, só leitura
-- **PAPER** — cérebro / mosca: semente demo (ou `SNAPSHOT_URL`), sem pretender que o neurônio opere a exchange
+- **Mosca** — paper MaleCNS: patrimônio da semente / `SNAPSHOT_URL`, P&L %, último sinal. Selo **PAPER**.
+- **Carteira Polymarket** — endereço público ao vivo: pUSD + valor do portfólio + posições. Selo **LIVE**.
+- **Delta** — mosca − carteira e P&L % desde o início, com “quem vai ganhando”.
 
 Aprendizado lucrativo **não foi demonstrado**. A mosca animada é **decorativa**.
 
 ## O que você vê
 
-- Selo **LIVE** na carteira e **PAPER** no cérebro
+- Placar **Mosca (PAPER)** × **Carteira Polymarket (LIVE)**
 - Saldo pUSD, POL, USDC / USDC.e, valor do portfólio, posições e atividade
 - Avatar da mosca (SVG/CSS) que reage a BUY / SELL / HOLD do demo
 - O gráfico que a mosca “vê” (`/demo/latest-input.png`)
@@ -54,9 +55,10 @@ Na Vercel (Environment Variables):
 ```bash
 WALLET_ADDRESS=0x6eA65CEf2FF7c8dfB3Ad59C6FACD32eA45f7744d
 LIVE_WALLET=1
+WALLET_START_USD=10
 ```
 
-Desligue a faixa live com `LIVE_WALLET=0`. **Não** coloque private keys nem API secrets do CLOB.
+`WALLET_START_USD` é a base do P&L % da carteira (default `10`). A mosca usa `PAPER_START_USD` ou o caixa inicial da semente (`5`). Desligue o live com `LIVE_WALLET=0`. **Não** coloque private keys nem API secrets do CLOB.
 
 ## Dados de demonstração (cérebro)
 
@@ -82,7 +84,7 @@ O worker (se existir) continua sendo a fonte do cérebro — não da carteira li
 
 Importe este repositório (branch `main`). Framework preset: **Next.js**. Build: `npm run build`.
 
-Variáveis recomendadas: `WALLET_ADDRESS`, `LIVE_WALLET=1`. Nenhuma é obrigatória — o endereço documentado é o default.
+Variáveis recomendadas: `WALLET_ADDRESS`, `LIVE_WALLET=1`, `WALLET_START_USD=10`. Nenhuma é obrigatória — o endereço documentado e o start `10` são o default.
 
 ## Aviso
 

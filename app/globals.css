@@ -252,11 +252,122 @@ main.watch {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(430px, 1fr);
   grid-template-areas:
+    "score score"
     "theater account"
     "brain account";
   gap: 28px 28px;
   row-gap: 18px;
   align-items: start;
+}
+
+.scoreboard {
+  grid-area: score;
+  min-width: 0;
+}
+
+.score-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.score-head h2 {
+  font: 12px var(--pixel);
+  margin: 0;
+}
+
+.score-head span {
+  font: 8px var(--pixel);
+  color: var(--muted);
+}
+
+.score-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 0.72fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.score-card {
+  background: #07080c;
+  border: 1px solid var(--line);
+  padding: 14px 16px 16px;
+  box-shadow: 4px 4px 0 #1d2028;
+  min-width: 0;
+}
+
+.score-card.fly {
+  border-left: 3px solid var(--acid);
+}
+
+.score-card.wallet {
+  border-left: 3px solid #61adff;
+}
+
+.score-card.delta {
+  border-left: 3px solid #7376ff;
+  text-align: center;
+}
+
+.score-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.score-equity {
+  display: block;
+  font: 400 clamp(26px, 3vw, 38px) / 1.15 var(--pixel);
+  margin: 0 0 8px;
+}
+
+.score-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.score-card.delta .score-meta {
+  justify-content: center;
+  flex-direction: column;
+}
+
+.score-signal {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  border-top: 1px dashed var(--line);
+  padding-top: 10px;
+}
+
+.score-signal small {
+  font: 8px var(--pixel);
+  color: var(--muted);
+}
+
+.score-signal b {
+  font: 14px var(--pixel);
+}
+
+.score-leader {
+  margin: 0;
+  font: 10px var(--pixel);
+  color: var(--ink);
+}
+
+.score-leader.fly {
+  color: var(--acid);
+}
+
+.score-leader.wallet {
+  color: #61adff;
 }
 
 .theater {
@@ -1179,6 +1290,15 @@ footer.site > span:first-child:after {
     flex-direction: column;
     padding: 12px 12px 0;
     gap: 12px;
+  }
+  .score-grid {
+    grid-template-columns: 1fr;
+  }
+  .score-card.delta {
+    text-align: left;
+  }
+  .score-card.delta .score-meta {
+    align-items: flex-start;
   }
   .scene-wrap {
     height: clamp(180px, 48vw, 280px);

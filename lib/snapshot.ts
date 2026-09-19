@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { buildScoreboard } from "@/lib/scoreboard";
 import type { RawSnapshot, SnapshotEvent, SnapshotPayload } from "@/lib/types";
 import { fetchLiveWallet } from "@/lib/wallet";
 
@@ -65,6 +66,12 @@ async function withMeta(
     Boolean(wallet?.sources.rpc || wallet?.sources.data_api);
   const liveEquity = liveOk && wallet ? wallet.portfolio_value : paperEquity;
 
+  const scoreboard = buildScoreboard(
+    { ...snap, equity_usdc: paperEquity },
+    events,
+    wallet,
+  );
+
   return {
     ...snap,
     mode: snap.mode || "paper",
@@ -76,6 +83,7 @@ async function withMeta(
     fetched_at: new Date().toISOString(),
     replay,
     wallet,
+    scoreboard,
   };
 }
 
