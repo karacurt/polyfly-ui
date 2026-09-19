@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FlyAvatar } from "@/components/FlyAvatar";
 import { Header } from "@/components/Header";
 import { HowItWorks } from "@/components/HowItWorks";
+import { Scoreboard } from "@/components/Scoreboard";
 import {
   formatClock,
   formatHz,
@@ -168,6 +169,9 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
         <HowItWorks copy={t} chartUrl={snapshot.chart_url} />
       ) : (
         <main id="watch" className="watch" tabIndex={-1} aria-label="Polyfly dashboard">
+          {snapshot.scoreboard ? (
+            <Scoreboard board={snapshot.scoreboard} copy={t} locale={locale} />
+          ) : null}
           <section className="theater" aria-label="Mosca decorativa no terminal">
             <div className="stage-top">
               <span>

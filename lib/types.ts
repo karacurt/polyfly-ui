@@ -111,6 +111,30 @@ export type LiveWallet = {
   error?: string;
 };
 
+export type ScoreboardSide = {
+  label: "mosca" | "polymarket_wallet";
+  mode: "paper" | "live";
+  equity: string;
+  start: string;
+  pnl: string;
+  pnl_percent: number;
+  signal?: NeuralSide;
+  cash_pusd?: string;
+  position_value?: string;
+  positions?: number;
+  address?: string;
+};
+
+export type Scoreboard = {
+  fly: ScoreboardSide;
+  wallet: ScoreboardSide | null;
+  delta: {
+    equity: string;
+    pnl_percent: number;
+    leader: "fly" | "wallet" | "tie";
+  } | null;
+};
+
 export type SnapshotPayload = RawSnapshot & {
   chart_url: string;
   events: SnapshotEvent[];
@@ -119,4 +143,5 @@ export type SnapshotPayload = RawSnapshot & {
   replay?: boolean;
   paper_equity_usdc?: string;
   wallet?: LiveWallet;
+  scoreboard?: Scoreboard;
 };
