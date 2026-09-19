@@ -92,8 +92,6 @@ export function buildScoreboard(
   let leader: "fly" | "wallet" | "tie" = "tie";
   if (Math.abs(pctDelta) >= 0.005) {
     leader = pctDelta > 0 ? "fly" : "wallet";
-  } else if (Math.abs(equityDelta) >= 0.000001) {
-    leader = equityDelta > 0 ? "fly" : "wallet";
   }
 
   return {
