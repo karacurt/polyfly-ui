@@ -96,13 +96,13 @@ function buildConnectome(width: number, height: number) {
     hemi: 0 | 1 | 2;
     region: number;
   }[] = [
-    { count: 220, ox: -280, oy: -8, rx: 168, ry: 150, hemi: 0, region: 0 },
-    { count: 220, ox: 280, oy: -8, rx: 168, ry: 150, hemi: 1, region: 1 },
-    { count: 70, ox: -118, oy: -70, rx: 70, ry: 48, hemi: 0, region: 2 },
-    { count: 70, ox: 118, oy: -70, rx: 70, ry: 48, hemi: 1, region: 2 },
-    { count: 160, ox: 0, oy: -18, rx: 128, ry: 92, hemi: 2, region: 2 },
-    { count: 80, ox: 0, oy: 78, rx: 86, ry: 48, hemi: 2, region: 2 },
-    { count: 120, ox: 0, oy: 198, rx: 62, ry: 132, hemi: 2, region: 3 },
+    { count: 420, ox: -286, oy: -6, rx: 178, ry: 158, hemi: 0, region: 0 },
+    { count: 420, ox: 286, oy: -6, rx: 178, ry: 158, hemi: 1, region: 1 },
+    { count: 110, ox: -124, oy: -74, rx: 78, ry: 52, hemi: 0, region: 2 },
+    { count: 110, ox: 124, oy: -74, rx: 78, ry: 52, hemi: 1, region: 2 },
+    { count: 260, ox: 0, oy: -16, rx: 136, ry: 98, hemi: 2, region: 2 },
+    { count: 110, ox: 0, oy: 82, rx: 92, ry: 52, hemi: 2, region: 2 },
+    { count: 190, ox: 0, oy: 204, rx: 66, ry: 138, hemi: 2, region: 3 },
   ];
 
   for (const region of regions) {
@@ -171,11 +171,11 @@ function buildConnectome(width: number, height: number) {
       .sort((p, q) => p.d - q.d);
     let links = 0;
     for (const item of near) {
-      if (links >= 6) break;
+      if (links >= 8) break;
       const b = somas[item.j];
       const same = a.region === b.region || a.hemi === b.hemi;
-      if (item.d > (same ? 46 : 34)) continue;
-      if (!same && rand() > 0.22) continue;
+      if (item.d > (same ? 52 : 40)) continue;
+      if (!same && rand() > 0.28) continue;
       filaments.push({
         a: i,
         b: item.j,
@@ -188,6 +188,24 @@ function buildConnectome(width: number, height: number) {
       });
       links += 1;
     }
+  }
+
+  const left = somas.map((s, i) => ({ s, i })).filter((row) => row.s.hemi === 0);
+  const right = somas.map((s, i) => ({ s, i })).filter((row) => row.s.hemi === 1);
+  for (let n = 0; n < 90; n += 1) {
+    const a = left[Math.floor(rand() * left.length)];
+    const b = right[Math.floor(rand() * right.length)];
+    if (!a || !b) break;
+    filaments.push({
+      a: a.i,
+      b: b.i,
+      cx: (a.s.x + b.s.x) / 2,
+      cy: Math.min(a.s.y, b.s.y) - 18 * Math.random(),
+      region: 2,
+      hemi: 2,
+      fire: 0,
+      phase: rand() * Math.PI * 2,
+    });
   }
 
   return { somas, filaments, hole };

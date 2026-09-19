@@ -142,19 +142,25 @@ async function fetchOnchain(address: string): Promise<{
   wethPrice?: number;
 }> {
   const data = paddedBalanceData(address);
-  const calls = [
+  const tokenCalls = [
     { method: "eth_getBalance", params: [address, "latest"] },
     { method: "eth_call", params: [{ to: PUSD, data }, "latest"] },
     { method: "eth_call", params: [{ to: USDC, data }, "latest"] },
     { method: "eth_call", params: [{ to: USDCE, data }, "latest"] },
     { method: "eth_call", params: [{ to: WETH, data }, "latest"] },
+  ];
+  const reserveCall = [
     { method: "eth_call", params: [{ to: QUICKSWAP_WETH_USDCE, data: GET_RESERVES }, "latest"] },
   ];
 
   let lastError: unknown;
   for (const url of RPC_CANDIDATES) {
     try {
-      const [pol, pusd, usdc, usdce, weth, reserves] = await rpcBatch(url, calls);
+      const [tokens, reserves] = await Promise.all([
+        rpcBatch(url, tokenCalls),
+        rpcBatch(url, reserveCall).catch(() => [] as string[]),
+      ]);
+      const [pol, pusd, usdc, usdce, weth] = tokens;
       const balances: WalletBalances = {
         pol: hexToDecimal(pol, 18),
         pusd: hexToDecimal(pusd, 6),
@@ -167,7 +173,7 @@ async function fetchOnchain(address: string): Promise<{
         addDecimal(balances.pusd, balances.usdc),
         balances.usdce,
       );
-      return { balances, wethPrice: priceFromReserves(reserves) };
+      return { balances, wethPrice: priceFromReserves(reserves[0] ?? "") };
     } catch (error) {
       lastError = error;
     }
@@ -325,8 +331,18 @@ export async function fetchLiveWallet(): Promise<LiveWallet | undefined> {
 
   try {
     const wallet = await fetchLiveWalletUncached(address);
-    cache = { at: Date.now(), wallet };
-    return wallet;
+    const prev = cache?.wallet;
+    const prevWeth = Number(prev?.balances.weth);
+    const nextWeth = Number(wallet.balances.weth);
+    const keep =
+      prev?.sources.rpc &&
+      Number.isFinite(prevWeth) &&
+      prevWeth > 1e-6 &&
+      (!wallet.sources.rpc || !Number.isFinite(nextWeth) || nextWeth < 1e-6)
+        ? prev
+        : wallet;
+    cache = { at: Date.now(), wallet: keep };
+    return keep;
   } catch (error) {
     return {
       enabled: true,
