@@ -10,8 +10,10 @@ import {
   formatInt,
   formatPrice,
   formatSignedUsdc,
+  formatPol,
   formatUsdc,
   relativeAge,
+  shortAddress,
   signClass,
   splitEquity,
 } from "@/lib/format";
@@ -42,7 +44,7 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
   const [how, setHow] = useState(false);
   const [motion, setMotion] = useState(true);
   const [now, setNow] = useState(() => Date.now());
-  const [tab, setTab] = useState<"events" | "decisions">("events");
+  const [tab, setTab] = useState<"wallet" | "events">("wallet");
   const orbit = useRef({ x: 8, y: -6 });
   const dragging = useRef(false);
   const last = useRef({ x: 0, y: 0 });
@@ -51,7 +53,9 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
 
   const t = copy[locale];
   const side = (snapshot.neural?.side ?? "HOLD") as NeuralSide;
+  const wallet = snapshot.wallet?.enabled ? snapshot.wallet : undefined;
   const equity = splitEquity(snapshot.equity_usdc, locale);
+  const pnl = wallet ? wallet.cash_pnl : snapshot.pnl_delta_usdc;
 
   const syncHash = useCallback(() => {
     setHow(window.location.hash === "#how-it-works");
@@ -152,7 +156,13 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
 
   return (
     <>
-      <Header copy={t} locale={locale} onLocale={setLocale} how={how} />
+      <Header
+        copy={t}
+        locale={locale}
+        onLocale={setLocale}
+        how={how}
+        live={Boolean(wallet)}
+      />
 
       {how ? (
         <HowItWorks copy={t} chartUrl={snapshot.chart_url} />
@@ -238,13 +248,20 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
             </div>
           </section>
 
-          <section className="account" aria-label="Carteira paper">
+          <section className="account" aria-label={wallet ? t.liveWallet : t.bagTitle}>
             <div className="account-title">
               <h1>{t.bagTitle}</h1>
-              <span className="paper-badge" title={t.paperNeverLive}>
-                <i aria-hidden="true" />
-                {t.paper}
-              </span>
+              {wallet ? (
+                <span className="live-badge" title={t.liveWallet}>
+                  <i aria-hidden="true" />
+                  {t.live}
+                </span>
+              ) : (
+                <span className="paper-badge" title={t.paperNeverLive}>
+                  <i aria-hidden="true" />
+                  {t.paper}
+                </span>
+              )}
             </div>
 
             <div className="balance">
@@ -258,15 +275,46 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
               <div className="pnl-row">
                 <div>
                   <small>{t.netPnl}</small>
-                  <span className={signClass(snapshot.pnl_delta_usdc)}>
-                    {formatSignedUsdc(snapshot.pnl_delta_usdc, locale)} {t.currency}
+                  <span className={signClass(pnl)}>
+                    {formatSignedUsdc(pnl, locale)} {t.currency}
                   </span>
                 </div>
-                <small>{t.valuationAge}</small>
+                <small>{wallet ? t.valuationLive : t.valuationAge}</small>
               </div>
             </div>
 
             <div className="quote-grid">
+              {wallet ? (
+                <>
+                  <div className="stat-card">
+                    <span>{t.liveCash}</span>
+                    <strong>{formatUsdc(wallet.balances.pusd, locale)}</strong>
+                  </div>
+                  <div className="stat-card">
+                    <span>{t.liveValue}</span>
+                    <strong>{formatUsdc(wallet.position_value, locale)}</strong>
+                  </div>
+                  <div className="stat-card">
+                    <span>{t.livePol}</span>
+                    <strong>{formatPol(wallet.balances.pol, locale)}</strong>
+                  </div>
+                  <div className="stat-card">
+                    <span>
+                      {t.liveUsdc} / {t.liveUsdce}
+                    </span>
+                    <strong>
+                      {formatUsdc(wallet.balances.usdc, locale)} /{" "}
+                      {formatUsdc(wallet.balances.usdce, locale)}
+                    </strong>
+                  </div>
+                  <div className="stat-card wide">
+                    <span>
+                      {t.liveAddress} · {t.watchingWallet}
+                    </span>
+                    <strong title={wallet.address}>{shortAddress(wallet.address)}</strong>
+                  </div>
+                </>
+              ) : null}
               <div className="stat-card">
                 <span>{t.tick}</span>
                 <strong>{snapshot.tick}</strong>
@@ -292,7 +340,7 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
               </div>
               <div className="stat-card wide">
                 <span>
-                  {t.market} · {snapshot.quote?.outcome ?? "Yes"}
+                  {t.market} · {snapshot.quote?.outcome ?? "Yes"} · {t.neuralPaper}
                 </span>
                 <strong>{snapshot.quote?.title ?? snapshot.product}</strong>
               </div>
@@ -300,32 +348,67 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
 
             <section className="holdings">
               <h2>
-                {t.currentlyHolding} <span>{snapshot.execution?.status ?? "HOLD"}</span>
+                {wallet ? t.livePositions : t.currentlyHolding}
+                <span>
+                  {wallet
+                    ? `${wallet.positions.length}`
+                    : (snapshot.execution?.status ?? "HOLD")}
+                </span>
               </h2>
-              <p className="empty">{positionLabel}</p>
+              {wallet ? (
+                wallet.positions.length ? (
+                  <div className="holding-grid">
+                    {wallet.positions.map((pos) => (
+                      <div className="holding" key={`${pos.slug ?? pos.title}-${pos.outcome}`}>
+                        <div className="coin">
+                          <div className="coin-icon">P</div>
+                          <div>
+                            <strong>{pos.outcome || pos.title}</strong>
+                            <small>{pos.title}</small>
+                          </div>
+                        </div>
+                        <div className="holding-value">
+                          <strong>{formatUsdc(pos.current_value, locale)}</strong>
+                          <small className={signClass(pos.cash_pnl)}>
+                            {formatSignedUsdc(pos.cash_pnl, locale)} · {pos.size.toFixed(2)} @{" "}
+                            {pos.cur_price.toFixed(2)}
+                          </small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="empty">{t.liveNoPositions}</p>
+                )
+              ) : (
+                <p className="empty">{positionLabel}</p>
+              )}
             </section>
 
             <section className="activity">
               <div className="activity-source">
-                <span>{t.executionPaper}</span>
+                <span>{wallet ? t.executionLive : t.executionPaper}</span>
+                {wallet ? <span>{t.neuralPaper}</span> : null}
               </div>
               <div className="activity-head">
                 <div role="tablist" aria-label={t.events}>
+                  {wallet ? (
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={tab === "wallet"}
+                      onClick={() => setTab("wallet")}
+                    >
+                      {t.liveActivity} <span>{wallet.activity.length}</span>
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     role="tab"
                     aria-selected={tab === "events"}
                     onClick={() => setTab("events")}
                   >
-                    {t.events} <span>{events.length}</span>
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={tab === "decisions"}
-                    onClick={() => setTab("decisions")}
-                  >
-                    {t.decisions}
+                    {t.decisions} <span>{events.length}</span>
                   </button>
                 </div>
                 <span>
@@ -333,14 +416,54 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
                 </span>
               </div>
               <div className="activity-panel" role="tabpanel">
-                {events.length === 0 ? (
+                {tab === "wallet" && wallet ? (
+                  wallet.activity.length === 0 ? (
+                    <p className="empty">{t.liveNoActivity}</p>
+                  ) : (
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>{t.colTime}</th>
+                          <th>{t.colType}</th>
+                          <th>{t.colSize}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {wallet.activity.map((row, index) => (
+                          <tr key={`${row.timestamp}-${row.type}-${index}`}>
+                            <td>
+                              {formatClock(row.timestamp, locale)}
+                              <small>{row.outcome || "—"}</small>
+                            </td>
+                            <td>
+                              <span className={`side ${sideClass(row.side)}`}>
+                                {row.side || row.type}
+                              </span>
+                              <small>{row.title || row.type}</small>
+                            </td>
+                            <td>
+                              {row.usdc_size != null
+                                ? formatUsdc(row.usdc_size, locale)
+                                : row.size != null
+                                  ? row.size.toFixed(2)
+                                  : "—"}
+                              <small>
+                                {row.price != null ? `@ ${row.price.toFixed(2)}` : ""}
+                              </small>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )
+                ) : events.length === 0 ? (
                   <p className="empty">{t.emptyEvents}</p>
                 ) : (
                   <table>
                     <thead>
                       <tr>
                         <th>{t.colTime}</th>
-                        <th>{tab === "events" ? t.colExec : t.colSignal}</th>
+                        <th>{t.colSignal}</th>
                         <th>{t.colEquity}</th>
                       </tr>
                     </thead>
@@ -402,7 +525,9 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
               </div>
             </div>
             <div className={`decision ${side}`}>
-              <span className="eyebrow">{t.neuralOrder}</span>
+              <span className="eyebrow">
+                {t.neuralOrder} · {t.paper}
+              </span>
               <div>
                 <b>{side}</b>
                 <span>
@@ -428,9 +553,9 @@ export function Dashboard({ initial }: { initial: SnapshotPayload }) {
           </span>
         </span>
         <span>
-          {t.paper} · {freshness}
+          {wallet ? t.footerLive : t.paper} · {freshness}
         </span>
-        <span>{t.footerPaper}</span>
+        <span>{wallet ? t.footerPaperBrain : t.footerPaper}</span>
       </footer>
     </>
   );

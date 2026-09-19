@@ -132,10 +132,81 @@ summary:focus-visible {
   box-shadow: 3px 3px 0 #658b21;
 }
 
-.paper-badge i {
+.paper-badge i,
+.live-badge i {
   width: 8px;
   height: 8px;
   background: #060709;
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 6px 10px;
+  background: #61adff;
+  color: #060709;
+  font: 11px var(--pixel);
+  box-shadow: 3px 3px 0 #2b527c;
+}
+
+.mode-pair {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.holding-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.holding {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px 9px;
+  background: #101217;
+  border: 1px solid var(--line);
+}
+
+.holding .coin {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.coin-icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  background: var(--acid);
+  color: #080908;
+  font: 13px var(--pixel);
+  box-shadow: 2px 2px 0 #658b21;
+}
+
+.holding .coin strong,
+.holding-value strong {
+  display: block;
+  font: 11px var(--pixel);
+}
+
+.holding .coin small,
+.holding-value small {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  margin-top: 5px;
+}
+
+.holding-value {
+  text-align: right;
+  flex-shrink: 0;
 }
 
 .how-link,

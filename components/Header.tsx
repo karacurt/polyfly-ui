@@ -7,9 +7,10 @@ type HeaderProps = {
   locale: Locale;
   onLocale: (locale: Locale) => void;
   how: boolean;
+  live: boolean;
 };
 
-export function Header({ copy, locale, onLocale, how }: HeaderProps) {
+export function Header({ copy, locale, onLocale, how, live }: HeaderProps) {
   return (
     <header className="top">
       <a className="wordmark" href="#watch" aria-label="Polyfly">
@@ -30,10 +31,18 @@ export function Header({ copy, locale, onLocale, how }: HeaderProps) {
         </span>
       </a>
       <div className="top-actions">
-        <span className="paper-badge" title={copy.paperNeverLive}>
-          <i aria-hidden="true" />
-          {copy.paper}
-        </span>
+        <div className="mode-pair">
+          {live ? (
+            <span className="live-badge" title={copy.liveWallet}>
+              <i aria-hidden="true" />
+              {copy.live}
+            </span>
+          ) : null}
+          <span className="paper-badge" title={copy.paperNeverLive}>
+            <i aria-hidden="true" />
+            {copy.paper}
+          </span>
+        </div>
         <div className="lang-toggle" role="group" aria-label="Idioma">
           <button
             type="button"

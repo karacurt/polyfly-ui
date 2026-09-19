@@ -97,3 +97,17 @@ export function signClass(value: string | number | undefined): string {
   if (!Number.isFinite(n) || n === 0) return "";
   return n > 0 ? "positive" : "negative";
 }
+
+export function formatPol(value: string | number | undefined, locale: Locale): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  return n.toLocaleString(locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  });
+}
+
+export function shortAddress(address: string | undefined): string {
+  if (!address || address.length < 10) return "—";
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
