@@ -8,13 +8,14 @@ import type {
 export const DEFAULT_WALLET_ADDRESS =
   "0x6eA65CEf2FF7c8dfB3Ad59C6FACD32eA45f7744d";
 
-const DATA_API = "https://data-api.polymarket.com";
-const USER_AGENT =
-  "Polyfly-UI/1.0 (display-only wallet tracker; https://github.com/karacurt/polyfly-ui)";
+export const PUSD = "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB";
+export const USDC = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359";
+export const USDCE = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
+export const WETH = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619";
 
-const PUSD = "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB";
-const USDC = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359";
-const USDCE = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
+const QUICKSWAP_WETH_USDCE = "0x853Ee4b2A13f8a742d64C8F088bE7bA2131f670d";
+const USER_AGENT =
+  "Polyfly-UI/1.0 (display-only DEX wallet tracker; https://github.com/karacurt/polyfly-ui)";
 
 const RPC_CANDIDATES = [
   process.env.POLYGON_RPC_URL,
@@ -26,6 +27,7 @@ const CACHE_MS = 1600;
 let cache: { at: number; wallet: LiveWallet } | null = null;
 
 const BALANCE_OF = "0x70a08231";
+const GET_RESERVES = "0x0902f1ac";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -42,10 +44,6 @@ export function liveWalletEnabled(): boolean {
   if (flag === "0" || flag === "false" || flag === "off") return false;
   if (flag === "1" || flag === "true" || flag === "on") return true;
   return Boolean(process.env.WALLET_ADDRESS?.trim() || DEFAULT_WALLET_ADDRESS);
-}
-
-export function shortAddress(address: string): string {
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
 const ZERO = BigInt(0);
@@ -119,31 +117,63 @@ async function rpcBatch(
     });
 }
 
-async function fetchBalances(address: string): Promise<WalletBalances> {
+function emptyBalances(): WalletBalances {
+  return { pol: "0", pusd: "0", usdc: "0", usdce: "0", weth: "0", cash_usdc: "0" };
+}
+
+function priceFromReserves(hex: string): number | undefined {
+  if (!hex || hex === "0x" || hex.length < 130) return undefined;
+  try {
+    const reserve0 = BigInt(`0x${hex.slice(2, 66)}`);
+    const reserve1 = BigInt(`0x${hex.slice(66, 130)}`);
+    if (reserve0 === ZERO || reserve1 === ZERO) return undefined;
+    const usdce = Number(reserve0) / 1e6;
+    const weth = Number(reserve1) / 1e18;
+    if (!usdce || !weth) return undefined;
+    const price = usdce / weth;
+    return Number.isFinite(price) && price > 100 && price < 100_000 ? price : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function fetchOnchain(address: string): Promise<{
+  balances: WalletBalances;
+  wethPrice?: number;
+}> {
   const data = paddedBalanceData(address);
-  const calls = [
+  const tokenCalls = [
     { method: "eth_getBalance", params: [address, "latest"] },
     { method: "eth_call", params: [{ to: PUSD, data }, "latest"] },
     { method: "eth_call", params: [{ to: USDC, data }, "latest"] },
     { method: "eth_call", params: [{ to: USDCE, data }, "latest"] },
+    { method: "eth_call", params: [{ to: WETH, data }, "latest"] },
+  ];
+  const reserveCall = [
+    { method: "eth_call", params: [{ to: QUICKSWAP_WETH_USDCE, data: GET_RESERVES }, "latest"] },
   ];
 
   let lastError: unknown;
   for (const url of RPC_CANDIDATES) {
     try {
-      const [pol, pusd, usdc, usdce] = await rpcBatch(url, calls);
+      const [tokens, reserves] = await Promise.all([
+        rpcBatch(url, tokenCalls),
+        rpcBatch(url, reserveCall).catch(() => [] as string[]),
+      ]);
+      const [pol, pusd, usdc, usdce, weth] = tokens;
       const balances: WalletBalances = {
         pol: hexToDecimal(pol, 18),
         pusd: hexToDecimal(pusd, 6),
         usdc: hexToDecimal(usdc, 6),
         usdce: hexToDecimal(usdce, 6),
+        weth: hexToDecimal(weth, 18),
         cash_usdc: "0",
       };
       balances.cash_usdc = addDecimal(
         addDecimal(balances.pusd, balances.usdc),
         balances.usdce,
       );
-      return balances;
+      return { balances, wethPrice: priceFromReserves(reserves[0] ?? "") };
     } catch (error) {
       lastError = error;
     }
@@ -151,127 +181,139 @@ async function fetchBalances(address: string): Promise<WalletBalances> {
   throw lastError instanceof Error ? lastError : new Error("rpc failed");
 }
 
-async function dataGet(path: string): Promise<unknown> {
-  const response = await fetch(`${DATA_API}${path}`, {
-    headers: {
-      accept: "application/json",
-      "user-agent": USER_AGENT,
+async function fetchDexscreenerPrice(): Promise<number | undefined> {
+  try {
+    const response = await fetch(
+      `https://api.dexscreener.com/latest/dex/tokens/${WETH}`,
+      {
+        headers: { accept: "application/json", "user-agent": USER_AGENT },
+        cache: "no-store",
+        signal: AbortSignal.timeout(3000),
+      },
+    );
+    if (!response.ok) return undefined;
+    const json: unknown = await response.json();
+    if (!isRecord(json) || !Array.isArray(json.pairs)) return undefined;
+    const polygon = json.pairs
+      .filter(isRecord)
+      .filter((row) => String(row.chainId) === "polygon")
+      .map((row) => Number(isRecord(row.priceUsd) ? row.priceUsd : row.priceNative))
+      .filter((n) => Number.isFinite(n) && n > 100);
+    return polygon[0];
+  } catch {
+    return undefined;
+  }
+}
+
+async function fetchParaswapPrice(): Promise<number | undefined> {
+  try {
+    const amount = "1000000000000000";
+    const url =
+      `https://apiv5.paraswap.io/prices?srcToken=${WETH}&destToken=${USDCE}` +
+      `&amount=${amount}&srcDecimals=18&destDecimals=6&side=SELL&network=137`;
+    const response = await fetch(url, {
+      headers: { accept: "application/json", "user-agent": USER_AGENT },
+      cache: "no-store",
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!response.ok) return undefined;
+    const json: unknown = await response.json();
+    const dest =
+      isRecord(json) && isRecord(json.priceRoute)
+        ? Number(json.priceRoute.destAmount)
+        : NaN;
+    if (!Number.isFinite(dest) || dest <= 0) return undefined;
+    return dest / 1e6 / 0.001;
+  } catch {
+    return undefined;
+  }
+}
+
+function wethCostUsdce(): number {
+  const n = Number(process.env.WETH_COST_USDCE ?? process.env.WETH_COST_USD);
+  return Number.isFinite(n) && n > 0 ? n : 2.8;
+}
+
+function buildWethPosition(
+  wethSize: number,
+  price: number | undefined,
+): { positions: WalletPosition[]; activity: WalletActivity[]; positionValue: number; cashPnl: number } {
+  if (!Number.isFinite(wethSize) || wethSize < 1e-6) {
+    return { positions: [], activity: [], positionValue: 0, cashPnl: 0 };
+  }
+  const cost = wethCostUsdce();
+  const value = price && price > 0 ? wethSize * price : 0;
+  const pnl = value > 0 ? value - cost : 0;
+  const avg = wethSize > 0 ? cost / wethSize : 0;
+  const pct = cost > 0 && value > 0 ? (pnl / cost) * 100 : 0;
+  const positions: WalletPosition[] = [
+    {
+      title: "WETH/USDC.e · ParaSwap",
+      outcome: "WETH long",
+      size: wethSize,
+      avg_price: avg,
+      current_value: value,
+      cash_pnl: pnl,
+      percent_pnl: pct,
+      cur_price: price ?? 0,
+      slug: "weth-usdce",
+      venue: "paraswap",
     },
-    cache: "no-store",
-    signal: AbortSignal.timeout(4000),
-  });
-  if (!response.ok) throw new Error(`data-api ${response.status}`);
-  return response.json();
-}
-
-function asNumber(value: unknown): number {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function asString(value: unknown): string | undefined {
-  return typeof value === "string" && value ? value : undefined;
-}
-
-function parsePositions(raw: unknown): WalletPosition[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(isRecord).map((row) => ({
-    title: asString(row.title) ?? "—",
-    outcome: asString(row.outcome) ?? "",
-    size: asNumber(row.size),
-    avg_price: asNumber(row.avgPrice),
-    current_value: asNumber(row.currentValue),
-    cash_pnl: asNumber(row.cashPnl),
-    percent_pnl: asNumber(row.percentPnl),
-    cur_price: asNumber(row.curPrice),
-    slug: asString(row.slug) ?? asString(row.eventSlug),
-  }));
-}
-
-function parseActivity(raw: unknown): WalletActivity[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(isRecord).map((row) => ({
-    timestamp: asNumber(row.timestamp ?? row.time ?? row.createdAt),
-    type: asString(row.type) ?? "UNKNOWN",
-    side: asString(row.side),
-    title: asString(row.title),
-    outcome: asString(row.outcome),
-    size: row.size == null ? undefined : asNumber(row.size),
-    price: row.price == null ? undefined : asNumber(row.price),
-    usdc_size: row.usdcSize == null ? undefined : asNumber(row.usdcSize),
-  }));
-}
-
-function parseValue(raw: unknown): number {
-  if (Array.isArray(raw) && isRecord(raw[0])) return asNumber(raw[0].value);
-  if (isRecord(raw)) return asNumber(raw.value);
-  return asNumber(raw);
+  ];
+  const activity: WalletActivity[] = [
+    {
+      timestamp: Date.now() / 1000,
+      type: "OPEN_SCALP",
+      side: "BUY",
+      title: "WETH/USDC.e",
+      outcome: "ParaSwap",
+      size: wethSize,
+      price: avg || undefined,
+      usdc_size: cost,
+    },
+  ];
+  return { positions, activity, positionValue: value, cashPnl: pnl };
 }
 
 async function fetchLiveWalletUncached(address: string): Promise<LiveWallet> {
   const fetchedAt = new Date().toISOString();
-  const sources = { rpc: false, data_api: false };
-  let balances: WalletBalances = {
-    pol: "0",
-    pusd: "0",
-    usdc: "0",
-    usdce: "0",
-    cash_usdc: "0",
-  };
-  let positions: WalletPosition[] = [];
-  let activity: WalletActivity[] = [];
-  let positionValue = 0;
+  const sources = { rpc: false, price: false };
   const errors: string[] = [];
+  let balances = emptyBalances();
+  let wethPrice: number | undefined;
 
-  const [rpcResult, valueResult, posResult, actResult] = await Promise.allSettled([
-    fetchBalances(address),
-    dataGet(`/value?user=${address}`),
-    dataGet(`/positions?user=${address}&limit=50&sizeThreshold=0&sortBy=CURRENT`),
-    dataGet(`/activity?user=${address}&limit=20`),
-  ]);
-
-  if (rpcResult.status === "fulfilled") {
-    balances = rpcResult.value;
+  try {
+    const onchain = await fetchOnchain(address);
+    balances = onchain.balances;
+    wethPrice = onchain.wethPrice;
     sources.rpc = true;
-  } else {
+    if (wethPrice) sources.price = true;
+  } catch {
     errors.push("rpc");
   }
 
-  if (valueResult.status === "fulfilled") {
-    positionValue = parseValue(valueResult.value);
-    sources.data_api = true;
-  } else {
-    errors.push("value");
+  if (!wethPrice) {
+    const [dex, para] = await Promise.all([fetchDexscreenerPrice(), fetchParaswapPrice()]);
+    wethPrice = dex ?? para;
+    if (wethPrice) sources.price = true;
+    else errors.push("price");
   }
 
-  if (posResult.status === "fulfilled") {
-    positions = parsePositions(posResult.value);
-    sources.data_api = true;
-    if (!positionValue && positions.length) {
-      positionValue = positions.reduce((sum, row) => sum + row.current_value, 0);
-    }
-  } else {
-    errors.push("positions");
-  }
-
-  if (actResult.status === "fulfilled") {
-    activity = parseActivity(actResult.value);
-    sources.data_api = true;
-  } else {
-    errors.push("activity");
-  }
-
-  const cashPnl = positions.reduce((sum, row) => sum + row.cash_pnl, 0);
+  const wethSize = Number(balances.weth);
+  const { positions, activity, positionValue, cashPnl } = buildWethPosition(wethSize, wethPrice);
   const portfolio = addDecimal(balances.cash_usdc, positionValue.toFixed(6));
 
   return {
     enabled: true,
     address,
     chain: "polygon",
+    venue: "paraswap",
+    pair: "WETH/USDC.e",
     balances,
     portfolio_value: portfolio,
     position_value: positionValue.toFixed(6).replace(/\.?0+$/, "") || "0",
     cash_pnl: cashPnl,
+    weth_price_usdce: wethPrice ? wethPrice.toFixed(2) : undefined,
     positions,
     activity,
     fetched_at: fetchedAt,
@@ -289,23 +331,34 @@ export async function fetchLiveWallet(): Promise<LiveWallet | undefined> {
 
   try {
     const wallet = await fetchLiveWalletUncached(address);
-    cache = { at: Date.now(), wallet };
-    return wallet;
+    const prev = cache?.wallet;
+    const prevWeth = Number(prev?.balances.weth);
+    const nextWeth = Number(wallet.balances.weth);
+    const keep =
+      prev?.sources.rpc &&
+      Number.isFinite(prevWeth) &&
+      prevWeth > 1e-6 &&
+      (!wallet.sources.rpc || !Number.isFinite(nextWeth) || nextWeth < 1e-6)
+        ? prev
+        : wallet;
+    cache = { at: Date.now(), wallet: keep };
+    return keep;
   } catch (error) {
-    const failed: LiveWallet = {
+    return {
       enabled: true,
       address,
       chain: "polygon",
-      balances: { pol: "0", pusd: "0", usdc: "0", usdce: "0", cash_usdc: "0" },
+      venue: "paraswap",
+      pair: "WETH/USDC.e",
+      balances: emptyBalances(),
       portfolio_value: "0",
       position_value: "0",
       cash_pnl: 0,
       positions: [],
       activity: [],
       fetched_at: new Date().toISOString(),
-      sources: { rpc: false, data_api: false },
+      sources: { rpc: false, price: false },
       error: error instanceof Error ? error.message : "wallet fetch failed",
     };
-    return failed;
   }
 }

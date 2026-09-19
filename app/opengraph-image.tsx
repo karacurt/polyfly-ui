@@ -39,7 +39,7 @@ export default function OpenGraphImage() {
           Polyfly
         </div>
         <div style={{ fontSize: 26, color: "#8b97ad", marginTop: 16 }}>
-          A fruit-fly connectome watching Polymarket.
+          A living FlyWire-style connectome on Polygon.
         </div>
         <div style={{ fontSize: 20, color: "#8b97ad", marginTop: 28 }}>
           Decorative fly. Paper brain. Live wallet is display-only.

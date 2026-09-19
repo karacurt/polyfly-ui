@@ -1,27 +1,61 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { NeuralState } from "@/lib/types";
+import type { ConsciousnessState, NeuralState } from "@/lib/types";
 
-type Neuron = {
+type Soma = {
   x: number;
   y: number;
-  hemi: 0 | 1;
+  hemi: 0 | 1 | 2;
+  region: number;
   phase: number;
   size: number;
   fire: number;
+  r: number;
+  g: number;
+  b: number;
 };
 
-type Synapse = {
+type Filament = {
   a: number;
   b: number;
-  w: number;
+  cx: number;
+  cy: number;
+  region: number;
+  hemi: 0 | 1 | 2;
+  fire: number;
+  phase: number;
 };
 
 type Props = {
   neural?: NeuralState;
+  consciousness?: ConsciousnessState;
   motion: boolean;
 };
+
+const PALETTES: [number, number, number][][] = [
+  [
+    [92, 226, 255],
+    [232, 92, 255],
+    [255, 224, 74],
+  ],
+  [
+    [80, 214, 255],
+    [255, 92, 196],
+    [255, 232, 96],
+  ],
+  [
+    [168, 92, 255],
+    [80, 230, 150],
+    [255, 130, 62],
+    [255, 72, 118],
+  ],
+  [
+    [90, 150, 255],
+    [150, 110, 255],
+    [70, 210, 200],
+  ],
+];
 
 function mulberry32(seed: number) {
   return () => {
@@ -32,67 +66,163 @@ function mulberry32(seed: number) {
   };
 }
 
-function buildField(width: number, height: number) {
-  const rand = mulberry32(17891);
-  const neurons: Neuron[] = [];
-  const count = 236;
+function sampleEllipse(
+  rand: () => number,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+): [number, number] {
+  const t = rand() * Math.PI * 2;
+  const r = Math.sqrt(rand());
+  return [cx + Math.cos(t) * rx * r, cy + Math.sin(t) * ry * r];
+}
+
+function buildConnectome(width: number, height: number) {
+  const rand = mulberry32(42187);
+  const somas: Soma[] = [];
   const cx = width * 0.5;
-  const cy = height * 0.44;
-  const rx = Math.max(160, width * 0.38);
-  const ry = Math.max(110, height * 0.3);
+  const cy = height * 0.42;
+  const scale = Math.min(width / 1180, height / 760);
 
-  for (let i = 0; i < count; i += 1) {
-    const hemi: 0 | 1 = i < count / 2 ? 0 : 1;
-    const t = rand() * Math.PI * 2;
-    const r = Math.sqrt(rand());
-    const ox = hemi === 0 ? -rx * 0.58 : rx * 0.58;
-    neurons.push({
-      x: cx + ox + Math.cos(t) * rx * 0.58 * r,
-      y: cy + Math.sin(t) * ry * r * 1.12,
-      hemi,
-      phase: rand() * Math.PI * 2,
-      size: 1.2 + rand() * 2.1,
-      fire: rand() * 0.2,
-    });
-  }
+  const hole = { x: cx, y: cy + 8 * scale, r: 22 * scale };
 
-  const synapses: Synapse[] = [];
-  for (let i = 0; i < neurons.length; i += 1) {
-    const a = neurons[i];
-    let links = 0;
-    for (let j = i + 1; j < neurons.length && links < 4; j += 1) {
-      const b = neurons[j];
-      const d = Math.hypot(a.x - b.x, a.y - b.y);
-      const same = a.hemi === b.hemi;
-      if ((same && d < 72) || (!same && d < 56 && rand() < 0.16)) {
-        synapses.push({ a: i, b: j, w: same ? 0.8 : 0.4 });
-        links += 1;
-      }
+  const regions: {
+    count: number;
+    ox: number;
+    oy: number;
+    rx: number;
+    ry: number;
+    hemi: 0 | 1 | 2;
+    region: number;
+  }[] = [
+    { count: 420, ox: -286, oy: -6, rx: 178, ry: 158, hemi: 0, region: 0 },
+    { count: 420, ox: 286, oy: -6, rx: 178, ry: 158, hemi: 1, region: 1 },
+    { count: 110, ox: -124, oy: -74, rx: 78, ry: 52, hemi: 0, region: 2 },
+    { count: 110, ox: 124, oy: -74, rx: 78, ry: 52, hemi: 1, region: 2 },
+    { count: 260, ox: 0, oy: -16, rx: 136, ry: 98, hemi: 2, region: 2 },
+    { count: 110, ox: 0, oy: 82, rx: 92, ry: 52, hemi: 2, region: 2 },
+    { count: 190, ox: 0, oy: 204, rx: 66, ry: 138, hemi: 2, region: 3 },
+  ];
+
+  for (const region of regions) {
+    let added = 0;
+    let guard = 0;
+    while (added < region.count && guard < region.count * 8) {
+      guard += 1;
+      const [x, y] = sampleEllipse(
+        rand,
+        cx + region.ox * scale,
+        cy + region.oy * scale,
+        region.rx * scale,
+        region.ry * scale,
+      );
+      if (Math.hypot(x - hole.x, y - hole.y) < hole.r) continue;
+      if (y < 8 || y > height - 8 || x < 8 || x > width - 8) continue;
+      const palette = PALETTES[region.region];
+      const color = palette[Math.floor(rand() * palette.length)];
+      somas.push({
+        x,
+        y,
+        hemi: region.hemi,
+        region: region.region,
+        phase: rand() * Math.PI * 2,
+        size: 0.7 + rand() * 1.6,
+        fire: rand() * 0.15,
+        r: color[0],
+        g: color[1],
+        b: color[2],
+      });
+      added += 1;
     }
   }
 
-  return { neurons, synapses };
+  const filaments: Filament[] = [];
+  const buckets = new Map<string, number[]>();
+  const cell = 28;
+  somas.forEach((soma, i) => {
+    const key = `${Math.floor(soma.x / cell)}:${Math.floor(soma.y / cell)}`;
+    const list = buckets.get(key) ?? [];
+    list.push(i);
+    buckets.set(key, list);
+  });
+
+  const neighbors = (i: number) => {
+    const soma = somas[i];
+    const gx = Math.floor(soma.x / cell);
+    const gy = Math.floor(soma.y / cell);
+    const found: number[] = [];
+    for (let dx = -1; dx <= 1; dx += 1) {
+      for (let dy = -1; dy <= 1; dy += 1) {
+        const list = buckets.get(`${gx + dx}:${gy + dy}`);
+        if (!list) continue;
+        for (const j of list) {
+          if (j > i) found.push(j);
+        }
+      }
+    }
+    return found;
+  };
+
+  for (let i = 0; i < somas.length; i += 1) {
+    const a = somas[i];
+    const near = neighbors(i)
+      .map((j) => ({ j, d: Math.hypot(a.x - somas[j].x, a.y - somas[j].y) }))
+      .sort((p, q) => p.d - q.d);
+    let links = 0;
+    for (const item of near) {
+      if (links >= 8) break;
+      const b = somas[item.j];
+      const same = a.region === b.region || a.hemi === b.hemi;
+      if (item.d > (same ? 52 : 40)) continue;
+      if (!same && rand() > 0.28) continue;
+      filaments.push({
+        a: i,
+        b: item.j,
+        cx: (a.x + b.x) / 2 + (rand() - 0.5) * 10,
+        cy: (a.y + b.y) / 2 + (rand() - 0.5) * 10,
+        region: a.region,
+        hemi: a.hemi === b.hemi ? a.hemi : 2,
+        fire: 0,
+        phase: rand() * Math.PI * 2,
+      });
+      links += 1;
+    }
+  }
+
+  const left = somas.map((s, i) => ({ s, i })).filter((row) => row.s.hemi === 0);
+  const right = somas.map((s, i) => ({ s, i })).filter((row) => row.s.hemi === 1);
+  for (let n = 0; n < 90; n += 1) {
+    const a = left[Math.floor(rand() * left.length)];
+    const b = right[Math.floor(rand() * right.length)];
+    if (!a || !b) break;
+    filaments.push({
+      a: a.i,
+      b: b.i,
+      cx: (a.s.x + b.s.x) / 2,
+      cy: Math.min(a.s.y, b.s.y) - 18 * Math.random(),
+      region: 2,
+      hemi: 2,
+      fire: 0,
+      phase: rand() * Math.PI * 2,
+    });
+  }
+
+  return { somas, filaments, hole };
 }
 
-function rateFor(
-  hemi: 0 | 1,
-  side: string,
-  leftHz: number,
-  rightHz: number,
-  difference: number,
-) {
-  const base = (hemi === 0 ? leftHz : rightHz) / 42;
-  const burst = 1 + Math.min(1.6, Math.abs(difference) / 12);
-  if (side === "HOLD") return 0.28 * Math.max(0.35, base);
-  if (side === "BUY") return (hemi === 1 ? 1.85 : 0.32) * base * burst;
-  if (side === "SELL") return (hemi === 0 ? 1.85 : 0.32) * base * burst;
-  return 0.32 * base;
+function hemiBias(hemi: 0 | 1 | 2, side: string): number {
+  if (side === "BUY") return hemi === 1 ? 1.7 : hemi === 0 ? 0.42 : 1;
+  if (side === "SELL") return hemi === 0 ? 1.7 : hemi === 1 ? 0.42 : 1;
+  return 0.72;
 }
 
-export function NeuronField({ neural, motion }: Props) {
+export function NeuronField({ neural, consciousness, motion }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const neuralRef = useRef(neural);
+  const ciRef = useRef(consciousness);
   neuralRef.current = neural;
+  ciRef.current = consciousness;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -101,10 +231,9 @@ export function NeuronField({ neural, motion }: Props) {
     if (!ctx) return;
 
     const reduce =
-      !motion ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      !motion || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    let field = buildField(canvas.clientWidth || 800, canvas.clientHeight || 600);
+    let field = buildConnectome(canvas.clientWidth || 1100, canvas.clientHeight || 720);
     let raf = 0;
     let last = performance.now();
     let pulse = 0;
@@ -117,14 +246,15 @@ export function NeuronField({ neural, motion }: Props) {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const n = neuralRef.current;
+      const mind = ciRef.current;
       const side = n?.side ?? "HOLD";
-      const leftHz = n?.left_hz ?? 40;
-      const rightHz = n?.right_hz ?? 40;
-      const difference = n?.difference_hz ?? 0;
       const stimulus = n?.stimulus ?? "none";
-      const changed = n?.memory?.changed_edges ?? 0;
-      const efficacy = n?.memory?.mean_efficacy ?? 1;
-      const spikeScale = Math.min(1.7, 0.6 + (n?.total_spikes ?? 0) / 1_200_000);
+      const ci = mind?.ci ?? 0.22;
+      const spikes = n?.total_spikes ?? 400000;
+      const activity = Math.min(
+        1.8,
+        0.35 + ci * 1.15 + Math.min(0.35, spikes / 1_800_000) + Math.abs(n?.difference_hz ?? 0) / 28,
+      );
 
       if (stimulus === "reward") {
         pulse = Math.min(1, pulse + dt * 1.8);
@@ -133,80 +263,72 @@ export function NeuronField({ neural, motion }: Props) {
         pulse = Math.min(1, pulse + dt * 1.8);
         pulseKind = "aversive";
       } else {
-        pulse = Math.max(0, pulse - dt * 0.85);
+        pulse = Math.max(0, pulse - dt * 0.8);
         if (pulse === 0) pulseKind = "none";
       }
 
       ctx.clearRect(0, 0, w, h);
-      const g = ctx.createRadialGradient(w * 0.5, h * 0.42, 30, w * 0.5, h * 0.48, w * 0.7);
-      g.addColorStop(0, "rgba(18, 36, 58, 0.45)");
-      g.addColorStop(1, "rgba(5, 8, 15, 0)");
-      ctx.fillStyle = g;
+      const wash = ctx.createRadialGradient(w * 0.5, h * 0.4, 20, w * 0.5, h * 0.46, w * 0.62);
+      wash.addColorStop(0, "rgba(18, 28, 58, 0.55)");
+      wash.addColorStop(1, "rgba(5, 8, 15, 0)");
+      ctx.fillStyle = wash;
       ctx.fillRect(0, 0, w, h);
 
       if (pulse > 0.02) {
-        const pg = ctx.createRadialGradient(w * 0.5, h * 0.46, 12, w * 0.5, h * 0.5, w * 0.5);
-        if (pulseKind === "reward") {
-          pg.addColorStop(0, `rgba(245, 185, 66, ${0.2 * pulse})`);
-          pg.addColorStop(1, "rgba(245, 185, 66, 0)");
-        } else {
-          pg.addColorStop(0, `rgba(155, 140, 255, ${0.16 * pulse})`);
-          pg.addColorStop(1, "rgba(155, 140, 255, 0)");
-        }
+        const pg = ctx.createRadialGradient(w * 0.5, h * 0.42, 16, w * 0.5, h * 0.45, w * 0.48);
+        pg.addColorStop(
+          0,
+          pulseKind === "reward"
+            ? `rgba(255, 150, 70, ${0.16 * pulse})`
+            : `rgba(210, 90, 255, ${0.14 * pulse})`,
+        );
+        pg.addColorStop(1, "rgba(0,0,0,0)");
         ctx.fillStyle = pg;
         ctx.fillRect(0, 0, w, h);
       }
 
-      const synapseAlpha = 0.07 + Math.min(0.16, (changed / 8000) * 0.12) * efficacy;
-      ctx.lineWidth = 0.85;
-      for (const s of field.synapses) {
-        const a = field.neurons[s.a];
-        const b = field.neurons[s.b];
-        const lit = a.fire > 0.32 && b.fire > 0.32;
-        const amberBias = a.hemi === 0 && b.hemi === 0;
-        ctx.strokeStyle = lit
-          ? pulseKind === "reward" || amberBias
-            ? `rgba(245, 185, 66, ${0.34 + a.fire * 0.4})`
-            : `rgba(110, 231, 245, ${0.3 + a.fire * 0.4})`
-          : amberBias
-            ? `rgba(245, 185, 66, ${synapseAlpha * s.w * 0.85})`
-            : `rgba(110, 231, 245, ${synapseAlpha * s.w})`;
+      ctx.lineWidth = 0.7;
+      for (const filament of field.filaments) {
+        const a = field.somas[filament.a];
+        const b = field.somas[filament.b];
+        const bias = hemiBias(filament.hemi, side);
+        if (!reduce) {
+          const rate = activity * bias * (0.55 + 0.45 * (mind?.broadcast ?? 0.5));
+          if (Math.random() < rate * dt * 5.4) filament.fire = 1;
+          filament.fire = Math.max(0, filament.fire - dt * (1.6 + (1 - ci)));
+        } else {
+          filament.fire = 0.18 + 0.22 * ((filament.phase % 1) * bias) * ci;
+        }
+        const lit = filament.fire;
+        const idle = 0.045 + 0.03 * ci;
+        ctx.strokeStyle =
+          lit > 0.2
+            ? `rgba(${a.r}, ${a.g}, ${a.b}, ${0.18 + lit * 0.72})`
+            : `rgba(${a.r}, ${a.g}, ${a.b}, ${idle})`;
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
+        ctx.quadraticCurveTo(filament.cx, filament.cy, b.x, b.y);
         ctx.stroke();
       }
 
-      for (const neuron of field.neurons) {
+      for (const soma of field.somas) {
+        const bias = hemiBias(soma.hemi, side);
         if (!reduce) {
-          const rate = rateFor(neuron.hemi, side, leftHz, rightHz, difference) * spikeScale;
-          if (Math.random() < rate * dt * 7.2) neuron.fire = 1;
-          neuron.fire = Math.max(0, neuron.fire - dt * 2.1);
+          const rate = activity * bias * (0.45 + ci);
+          if (Math.random() < rate * dt * 6.8) soma.fire = 1;
+          soma.fire = Math.max(0, soma.fire - dt * 2.2);
         } else {
-          const bias = rateFor(neuron.hemi, side, leftHz, rightHz, difference);
-          neuron.fire = 0.22 + (neuron.phase % 1) * 0.18 * Math.min(1.4, bias);
+          soma.fire = 0.2 + 0.2 * ci * bias;
         }
-
-        const warm = neuron.hemi === 0 ? 0.72 : 0.08;
-        const r = 110 + warm * 135;
-        const gCol = 214 - warm * 48;
-        const bCol = 245 - warm * 190;
-        const idle = 0.1 + 0.06 * (0.5 + 0.5 * Math.sin(now / 900 + neuron.phase));
-        const alpha = 0.16 + idle + neuron.fire * 0.78;
-        const radius = neuron.size + neuron.fire * 3.1;
-
+        const glow = soma.fire;
         ctx.beginPath();
-        ctx.fillStyle = `rgba(${r | 0}, ${gCol | 0}, ${bCol | 0}, ${alpha})`;
-        ctx.arc(neuron.x, neuron.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${soma.r}, ${soma.g}, ${soma.b}, ${0.16 + glow * 0.78})`;
+        ctx.arc(soma.x, soma.y, soma.size + glow * 2.4, 0, Math.PI * 2);
         ctx.fill();
-
-        if (neuron.fire > 0.28) {
+        if (glow > 0.35) {
           ctx.beginPath();
-          ctx.fillStyle =
-            pulseKind === "reward" || neuron.hemi === 0
-              ? `rgba(255, 210, 122, ${neuron.fire * 0.32})`
-              : `rgba(190, 250, 255, ${neuron.fire * 0.3})`;
-          ctx.arc(neuron.x, neuron.y, radius * 3.4, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${soma.r}, ${soma.g}, ${soma.b}, ${glow * 0.22})`;
+          ctx.arc(soma.x, soma.y, soma.size * 5.5, 0, Math.PI * 2);
           ctx.fill();
         }
       }
@@ -219,7 +341,7 @@ export function NeuronField({ neural, motion }: Props) {
       canvas.width = Math.max(1, Math.floor(w * dpr));
       canvas.height = Math.max(1, Math.floor(h * dpr));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      field = buildField(w, h);
+      field = buildConnectome(w, h);
       paint(performance.now());
     };
 

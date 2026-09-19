@@ -208,6 +208,7 @@ export function HowItWorks({ chartUrl }: { chartUrl: string }) {
           <p>{copy.disclaimerBody}</p>
           <p>{copy.disclaimerWorker}</p>
           <p>{copy.disclaimerPoll}</p>
+          <p>{copy.ciDisclaimer}</p>
         </div>
       </div>
     </section>
